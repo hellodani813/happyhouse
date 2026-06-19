@@ -1,74 +1,41 @@
+```python
 import streamlit as st
 import sqlite3
 import calendar
 from datetime import date
 
-# ------------------
-# 설정
-# ------------------
-
+# ----------------------------------
+# 페이지 설정
+# ----------------------------------
 st.set_page_config(
-    page_title="우리 가족 캘린더",
+    page_title="🏡 우리 가족 캘린더",
     page_icon="🏡",
     layout="wide"
 )
 
-# ------------------
+# ----------------------------------
 # 스타일
-# ------------------
-
+# ----------------------------------
 st.markdown("""
 <style>
-
-.main {
-    background-color: #f7f4ef;
+.block-container {
+    padding-top: 2rem;
 }
 
 .title-box {
-    background: white;
+    background: #faf7f2;
+    border: 1px solid #e8e2d8;
+    border-radius: 15px;
     padding: 20px;
-    border-radius: 16px;
-    border: 1px solid #ece6dd;
     text-align: center;
     margin-bottom: 20px;
 }
-
-.calendar-cell {
-    border: 1px solid #ece6dd;
-    border-radius: 12px;
-    padding: 8px;
-    min-height: 150px;
-    background: white;
-}
-
-.day-number {
-    font-weight: bold;
-    margin-bottom: 8px;
-}
-
-.husband {
-    background: #dbeafe;
-    padding: 4px;
-    border-radius: 8px;
-    margin-bottom: 4px;
-    font-size: 12px;
-}
-
-.wife {
-    background: #ffe4e6;
-    padding: 4px;
-    border-radius: 8px;
-    margin-bottom: 4px;
-    font-size: 12px;
-}
-
 </style>
 """, unsafe_allow_html=True)
 
-# ------------------
-# DB
-# ------------------
-
+# ----------------------------------
+# DB 연결
+# ----------------------------------
 conn = sqlite3.connect("family_calendar.db", check_same_thread=False)
 cursor = conn.cursor()
 
@@ -83,10 +50,9 @@ CREATE TABLE IF NOT EXISTS schedules(
 
 conn.commit()
 
-# ------------------
+# ----------------------------------
 # 헤더
-# ------------------
-
+# ----------------------------------
 st.markdown("""
 <div class="title-box">
 <h1>🏡 우리의 가족 캘린더</h1>
@@ -94,10 +60,9 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ------------------
-# 일정 등록
-# ------------------
-
+# ----------------------------------
+# 일정 추가
+# ----------------------------------
 with st.expander("➕ 일정 추가", expanded=True):
 
     col1, col2, col3 = st.columns([1,1,2])
@@ -136,13 +101,12 @@ with st.expander("➕ 일정 추가", expanded=True):
 
             conn.commit()
 
-            st.success("저장 완료!")
+            st.success("일정이 저장되었습니다.")
             st.rerun()
 
-# ------------------
-# 달력 선택
-# ------------------
-
+# ----------------------------------
+# 달력 년/월 선택
+# ----------------------------------
 today = date.today()
 
 c1, c2 = st.columns(2)
@@ -150,21 +114,20 @@ c1, c2 = st.columns(2)
 with c1:
     year = st.selectbox(
         "연도",
-        list(range(today.year - 2, today.year + 3)),
+        range(today.year - 2, today.year + 3),
         index=2
     )
 
 with c2:
     month = st.selectbox(
         "월",
-        list(range(1,13)),
+        range(1, 13),
         index=today.month - 1
     )
 
-# ------------------
+# ----------------------------------
 # 일정 조회
-# ------------------
-
+# ----------------------------------
 cursor.execute("SELECT * FROM schedules")
 rows = cursor.fetchall()
 
@@ -184,23 +147,19 @@ for row in rows:
         (event_id, member, title)
     )
 
-# ------------------
+# ----------------------------------
 # 달력
-# ------------------
-
+# ----------------------------------
 st.subheader("📅 월간 일정")
 
-week_names = ["월","화","수","목","금","토","일"]
+weekdays = ["월", "화", "수", "목", "금", "토", "일"]
 
-header_cols = st.columns(7)
+header = st.columns(7)
 
-for i, day in enumerate(week_names):
-    header_cols[i].markdown(
-        f"**{day}**"
-    )
+for i, day_name in enumerate(weekdays):
+    header[i].markdown(f"**{day_name}**")
 
 cal = calendar.Calendar(firstweekday=0)
-
 weeks = cal.monthdayscalendar(year, month)
 
 for week in weeks:
@@ -212,47 +171,31 @@ for week in weeks:
         with cols[i]:
 
             if day == 0:
-                st.write("")
+                st.empty()
                 continue
 
-            current = date(year, month, day)
+            current_date = date(year, month, day)
+            key = str(current_date)
 
-            key = str(current)
+            with st.container(border=True):
 
-            html = f"""
-            <div class='calendar-cell'>
-            <div class='day-number'>{day}</div>
-            """
+                st.markdown(f"**{day}**")
 
-            if key in events:
+                if key in events:
 
-                for _, member, title in events[key]:
+                    for _, member, title in events[key]:
 
-                    cls = (
-                        "husband"
-                        if member == "🤵 신랑"
-                        else "wife"
-                    )
+                        if member == "🤵 신랑":
+                            st.info(f"🤵 {title}")
 
-                    html += f"""
-                    <div class='{cls}'>
-                    {member}<br>
-                    {title}
-                    </div>
-                    """
+                        else:
+                            st.success(f"👰 {title}")
 
-            html += "</div>"
-
-            st.markdown(
-                html,
-                unsafe_allow_html=True
-            )
-
-# ------------------
-# 일정 관리
-# ------------------
-
+# ----------------------------------
+# 등록된 일정 목록
+# ----------------------------------
 st.divider()
+
 st.subheader("📝 등록된 일정")
 
 cursor.execute("""
@@ -273,14 +216,14 @@ for row in rows:
     member = row[2]
     title = row[3]
 
-    c1, c2 = st.columns([6,1])
+    col1, col2 = st.columns([6,1])
 
-    with c1:
+    with col1:
         st.write(
             f"{schedule_date} | {member} | {title}"
         )
 
-    with c2:
+    with col2:
 
         if st.button(
             "삭제",
@@ -295,3 +238,4 @@ for row in rows:
             conn.commit()
 
             st.rerun()
+```
