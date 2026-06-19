@@ -76,7 +76,7 @@ with st.expander("➕ 일정 추가", expanded=True):
     with col2:
         member = st.selectbox(
             "구성원",
-            ["🤵 신랑", "👰 신부"]
+            ["🤵 창준", "👰 다영영"]
         )
 
     with col3:
