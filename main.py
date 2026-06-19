@@ -333,3 +333,28 @@ def render_month_calendar(year, month, schedules):
                 html,
                 unsafe_allow_html=True
             )
+st.divider()
+
+today = date.today()
+
+month_col1, month_col2 = st.columns(2)
+
+with month_col1:
+    selected_year = st.selectbox(
+        "연도",
+        list(range(2024, 2036)),
+        index=2
+    )
+
+with month_col2:
+    selected_month = st.selectbox(
+        "월",
+        list(range(1, 13)),
+        index=today.month - 1
+    )
+
+render_month_calendar(
+    selected_year,
+    selected_month,
+    st.session_state.schedules
+)
