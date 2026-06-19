@@ -87,13 +87,6 @@ st.markdown(
     "<div class='sub-title'>👨‍👩‍👧‍👦 가족 모두의 일정을 한눈에 관리해보세요</div>",
     unsafe_allow_html=True
 )
-
-# ----------------------------------
-# 레이아웃
-# ----------------------------------
-
-left, right = st.columns([1, 1.4])
-
 st.divider()
 
 today = date.today()
@@ -119,6 +112,13 @@ render_month_calendar(
     selected_month,
     st.session_state.schedules
 )
+# ----------------------------------
+# 레이아웃
+# ----------------------------------
+
+left, right = st.columns([1, 1.4])
+
+
 # ----------------------------------
 # 일정 추가 영역
 # ----------------------------------
