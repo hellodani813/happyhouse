@@ -56,7 +56,7 @@ conn.commit()
 st.markdown("""
 <div class="title-box">
 <h1>🏡 우리의 가족 캘린더</h1>
-<p>신랑과 신부의 일정을 함께 공유해요</p>
+<p>일정을 함께 공유해요</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -76,7 +76,7 @@ with st.expander("➕ 일정 추가", expanded=True):
     with col2:
         member = st.selectbox(
             "구성원",
-            ["🤵 창준", "👰 다영영"]
+            ["🤵 창준", "👰 다영"]
         )
 
     with col3:
