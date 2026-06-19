@@ -1,316 +1,235 @@
-
 import streamlit as st
+from datetime import date
 import calendar
-import uuid
-from datetime import date, datetime
-
-# -----------------------------
-# 기본 설정
-# -----------------------------
 
 st.set_page_config(
-    page_title="우리 가족 캘린더",
-    page_icon="🌷",
+    page_title="우리의 가족 캘린더",
+    page_icon="🏡",
     layout="wide"
 )
 
-# -----------------------------
+# --------------------
 # 스타일
-# -----------------------------
-
+# --------------------
 st.markdown("""
 <style>
-
-.stApp{
-    background:linear-gradient(
-        180deg,
-        #fff9fb 0%,
-        #f7fbff 100%
-    );
+.main {
+    background-color: #f8f5f0;
 }
 
-.title{
+.title-box {
     text-align:center;
-    font-size:3rem;
-    font-weight:800;
-    color:#6c7cff;
-}
-
-.subtitle{
-    text-align:center;
-    color:#888;
+    padding:20px;
+    border-radius:20px;
+    background:#fffaf3;
+    border:1px solid #ebe3d6;
     margin-bottom:20px;
 }
 
-.calendar-cell{
+.day-card {
     background:white;
-    border-radius:18px;
-    min-height:150px;
+    border:1px solid #e9e1d5;
+    border-radius:12px;
     padding:8px;
-    border:1px solid #ececec;
-    box-shadow:0 3px 10px rgba(0,0,0,0.05);
+    min-height:140px;
 }
 
-.today{
-    border:3px solid #ff9dc5;
-}
-
-.card{
-    background:white;
-    border-radius:18px;
-    padding:20px;
-    box-shadow:0 3px 10px rgba(0,0,0,0.05);
-}
-
-.schedule-item{
+.schedule-item {
+    background:#f5eee3;
+    padding:4px 8px;
     border-radius:8px;
-    padding:4px 6px;
-    margin-top:4px;
-    font-size:12px;
+    margin-bottom:4px;
+    font-size:13px;
 }
 
+.member-husband {
+    color:#4a6fa5;
+    font-weight:bold;
+}
+
+.member-wife {
+    color:#c76d7e;
+    font-weight:bold;
+}
+
+.week-header {
+    text-align:center;
+    font-weight:bold;
+    color:#6b6257;
+    padding:8px;
+}
 </style>
 """, unsafe_allow_html=True)
 
-# -----------------------------
-# 데이터
-# -----------------------------
+# --------------------
+# 데이터 저장
+# --------------------
+if "events" not in st.session_state:
+    st.session_state.events = {}
 
-if "schedules" not in st.session_state:
-    st.session_state.schedules = []
-
-# -----------------------------
-# 색상
-# -----------------------------
-
-member_colors = {
-    "💙 아빠": "#dff1ff",
-    "💖 엄마": "#ffdff0",
-    "🌟 첫째": "#fff4bf",
-    "🍀 둘째": "#dcf8d5",
-    "🎉 가족행사": "#ebe1ff"
-}
-
-# -----------------------------
+# --------------------
 # 헤더
-# -----------------------------
+# --------------------
+st.markdown("""
+<div class="title-box">
+    <h1>🏡 우리의 가족 캘린더</h1>
+    <p>신랑과 신부의 일정을 함께 관리해요</p>
+</div>
+""", unsafe_allow_html=True)
 
-st.markdown(
-    "<div class='title'>🌷 우리 가족 캘린더 🌷</div>",
-    unsafe_allow_html=True
-)
+# --------------------
+# 일정 등록
+# --------------------
+with st.expander("➕ 일정 추가", expanded=True):
 
-st.markdown(
-    "<div class='subtitle'>가족 모두의 일정을 한눈에 확인해보세요 👨‍👩‍👧‍👦</div>",
-    unsafe_allow_html=True
-)
+    col1, col2, col3 = st.columns(3)
 
-# -----------------------------
-# 달력 함수
-# -----------------------------
-
-def draw_calendar(year, month):
-
-    st.markdown("### 📅 월간 캘린더")
-
-    weekdays = ["월", "화", "수", "목", "금", "토", "일"]
-
-    cols = st.columns(7)
-
-    for i, d in enumerate(weekdays):
-        cols[i].markdown(
-            f"<center><b>{d}</b></center>",
-            unsafe_allow_html=True
+    with col1:
+        selected_date = st.date_input(
+            "날짜",
+            value=date.today()
         )
 
-    cal = calendar.monthcalendar(year, month)
+    with col2:
+        member = st.selectbox(
+            "가족 구성원",
+            ["🤵 신랑", "👰 신부"]
+        )
 
-    today = date.today()
+    with col3:
+        title = st.text_input("일정")
 
-    for week in cal:
+    if st.button("일정 저장", use_container_width=True):
+        if title.strip():
 
-        cols = st.columns(7)
+            key = str(selected_date)
 
-        for idx, day in enumerate(week):
+            if key not in st.session_state.events:
+                st.session_state.events[key] = []
 
-            if day == 0:
-                cols[idx].empty()
-                continue
+            st.session_state.events[key].append({
+                "member": member,
+                "title": title
+            })
 
-            day_events = []
+            st.success("일정이 저장되었습니다.")
 
-            for s in st.session_state.schedules:
-
-                dt = datetime.strptime(
-                    s["date"],
-                    "%Y-%m-%d"
-                )
-
-                if (
-                    dt.year == year and
-                    dt.month == month and
-                    dt.day == day
-                ):
-                    day_events.append(s)
-
-            today_class = ""
-
-            if (
-                today.year == year and
-                today.month == month and
-                today.day == day
-            ):
-                today_class = "today"
-
-            html = f"""
-            <div class='calendar-cell {today_class}'>
-            <b>{day}</b>
-            """
-
-            for event in day_events[:4]:
-
-                color = member_colors[event["member"]]
-
-                html += f"""
-                <div
-                class='schedule-item'
-                style='background:{color};'>
-                {event["member"].split()[0]}
-                {event["title"]}
-                </div>
-                """
-
-            if len(day_events) > 4:
-                html += f"<small>+{len(day_events)-4}개</small>"
-
-            html += "</div>"
-
-            cols[idx].markdown(
-                html,
-                unsafe_allow_html=True
-            )
-
-# -----------------------------
+# --------------------
 # 월 선택
-# -----------------------------
-
+# --------------------
 today = date.today()
 
-c1, c2 = st.columns([1,1])
+col1, col2 = st.columns(2)
 
-with c1:
+with col1:
     year = st.selectbox(
-        "📆 연도",
-        list(range(2024, 2036)),
-        index=today.year - 2024
+        "연도",
+        list(range(today.year - 3, today.year + 4)),
+        index=3
     )
 
-with c2:
+with col2:
     month = st.selectbox(
-        "🗓️ 월",
-        list(range(1,13)),
+        "월",
+        list(range(1, 13)),
         index=today.month - 1
     )
 
-draw_calendar(year, month)
+# --------------------
+# 달력 생성
+# --------------------
+st.markdown("### 📅 월간 일정")
 
-st.divider()
+week_names = ["월", "화", "수", "목", "금", "토", "일"]
 
-# -----------------------------
-# 일정 추가
-# -----------------------------
-
-left, right = st.columns([1,1])
-
-with left:
-
-    st.markdown("### ➕ 일정 추가")
-
-    member = st.selectbox(
-        "가족 구성원",
-        [
-            "💙 아빠",
-            "💖 엄마",
-            "🌟 첫째",
-            "🍀 둘째",
-            "🎉 가족행사"
-        ]
+cols = st.columns(7)
+for col, day_name in zip(cols, week_names):
+    col.markdown(
+        f"<div class='week-header'>{day_name}</div>",
+        unsafe_allow_html=True
     )
 
-    schedule_date = st.date_input(
-        "날짜",
-        value=today
-    )
+cal = calendar.Calendar(firstweekday=0)
+month_days = cal.monthdayscalendar(year, month)
 
-    title = st.text_input(
-        "일정 제목",
-        placeholder="예: 치과 방문"
-    )
+for week in month_days:
 
-    time = st.text_input(
-        "시간",
-        placeholder="예: 14:00"
-    )
+    cols = st.columns(7)
 
-    if st.button("🌸 일정 저장", use_container_width=True):
+    for idx, day_num in enumerate(week):
 
-        if title:
+        with cols[idx]:
 
-            st.session_state.schedules.append({
-                "id": str(uuid.uuid4()),
-                "member": member,
-                "date": str(schedule_date),
-                "title": title,
-                "time": time
-            })
+            if day_num == 0:
+                st.write("")
+                continue
 
-            st.rerun()
+            current_date = date(year, month, day_num)
+            key = str(current_date)
 
-with right:
+            html = f"""
+            <div class='day-card'>
+                <strong>{day_num}</strong><br><br>
+            """
 
-    st.markdown("### 📋 선택 날짜 일정")
+            if key in st.session_state.events:
 
-    selected_day = st.date_input(
-        "조회 날짜",
-        value=today,
-        key="view"
-    )
+                for event in st.session_state.events[key]:
 
-    events = [
-        s for s in st.session_state.schedules
-        if s["date"] == str(selected_day)
-    ]
+                    cls = (
+                        "member-husband"
+                        if event["member"] == "🤵 신랑"
+                        else "member-wife"
+                    )
 
-    if not events:
-        st.info("일정이 없습니다 🌿")
+                    html += f"""
+                    <div class='schedule-item'>
+                        <span class='{cls}'>
+                            {event["member"]}
+                        </span><br>
+                        {event["title"]}
+                    </div>
+                    """
 
-    for event in events:
+            html += "</div>"
 
-        color = member_colors[event["member"]]
+            st.markdown(html, unsafe_allow_html=True)
 
-        st.markdown(
-            f"""
-            <div style="
-                background:{color};
-                padding:12px;
-                border-radius:12px;
-                margin-bottom:10px;
-            ">
-            <b>{event["member"]}</b><br>
-            📌 {event["title"]}<br>
-            ⏰ {event["time"]}
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+# --------------------
+# 일정 목록 및 삭제
+# --------------------
+st.markdown("---")
+st.markdown("### 📝 전체 일정")
 
-        if st.button(
-            f"🗑️ 삭제",
-            key=event["id"]
-        ):
-            st.session_state.schedules = [
-                x for x in st.session_state.schedules
-                if x["id"] != event["id"]
-            ]
-            st.rerun()
-```
+all_events = []
+
+for d, items in st.session_state.events.items():
+    for i, event in enumerate(items):
+        all_events.append((d, i, event))
+
+if not all_events:
+    st.info("등록된 일정이 없습니다.")
+else:
+
+    all_events.sort(key=lambda x: x[0])
+
+    for d, idx, event in all_events:
+
+        c1, c2 = st.columns([6, 1])
+
+        with c1:
+            st.write(
+                f"**{d}** | {event['member']} | {event['title']}"
+            )
+
+        with c2:
+            if st.button(
+                "삭제",
+                key=f"{d}_{idx}"
+            ):
+                st.session_state.events[d].pop(idx)
+
+                if not st.session_state.events[d]:
+                    del st.session_state.events[d]
+
+                st.rerun()
