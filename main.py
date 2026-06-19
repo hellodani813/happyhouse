@@ -1,6 +1,8 @@
 import streamlit as st
 from datetime import date
 import uuid
+import calendar
+from datetime import datetime
 
 # ----------------------------------
 # 페이지 설정
@@ -251,3 +253,83 @@ st.write("")
 st.write("")
 
 st.caption("💜 가족의 소중한 시간을 함께 관리해보세요")
+
+def render_month_calendar(year, month, schedules):
+
+    cal = calendar.monthcalendar(year, month)
+
+    st.markdown("## 📅 월간 가족 캘린더")
+
+    weekdays = ["월", "화", "수", "목", "금", "토", "일"]
+
+    cols = st.columns(7)
+
+    for i, day in enumerate(weekdays):
+        cols[i].markdown(
+            f"<div style='text-align:center;font-weight:bold;color:#666'>{day}</div>",
+            unsafe_allow_html=True
+        )
+
+    for week in cal:
+
+        cols = st.columns(7)
+
+        for idx, day in enumerate(week):
+
+            if day == 0:
+                cols[idx].markdown(
+                    """
+                    <div style='height:120px;border-radius:15px;background:#fafafa'></div>
+                    """,
+                    unsafe_allow_html=True
+                )
+                continue
+
+            day_schedules = []
+
+            for s in schedules:
+
+                d = datetime.strptime(
+                    s["date"],
+                    "%Y-%m-%d"
+                )
+
+                if d.year == year and d.month == month and d.day == day:
+                    day_schedules.append(s)
+
+            html = f"""
+            <div style="
+                background:white;
+                border-radius:15px;
+                padding:8px;
+                min-height:120px;
+                border:1px solid #eee;
+                box-shadow:0 2px 6px rgba(0,0,0,0.05);
+            ">
+            <b>{day}</b><br>
+            """
+
+            for item in day_schedules[:3]:
+
+                html += f"""
+                <div style="
+                    background:#f4f0ff;
+                    border-radius:8px;
+                    padding:2px 6px;
+                    margin-top:4px;
+                    font-size:12px;
+                ">
+                {item["member"]}<br>
+                {item["title"]}
+                </div>
+                """
+
+            if len(day_schedules) > 3:
+                html += f"<div style='font-size:12px'>+{len(day_schedules)-3}개 더</div>"
+
+            html += "</div>"
+
+            cols[idx].markdown(
+                html,
+                unsafe_allow_html=True
+            )
