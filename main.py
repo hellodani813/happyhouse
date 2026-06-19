@@ -193,7 +193,17 @@ for week in month_days:
 
             html += "</div>"
 
-            st.markdown(html, unsafe_allow_html=True)
+st.container(border=True)
+
+st.markdown(f"**{day_num}**")
+
+if key in st.session_state.events:
+    for event in st.session_state.events[key]:
+
+        if event["member"] == "🤵 신랑":
+            st.info(f"{event['member']} {event['title']}")
+        else:
+            st.warning(f"{event['member']} {event['title']}")
 
 # --------------------
 # 일정 목록 및 삭제
