@@ -1,241 +1,117 @@
-
+import streamlit as pd
 import streamlit as st
-import sqlite3
-import calendar
-from datetime import date
+from datetime import datetime, date
 
-# ----------------------------------
-# 페이지 설정
-# ----------------------------------
+# 1. 페이지 기본 설정 및 감성 테마 (Cozy Warm)
 st.set_page_config(
-    page_title="🏡 우리 가족 캘린더",
+    page_title="창준 & 다영의 스케쥴러",
     page_icon="🏡",
-    layout="wide"
+    layout="centered"
 )
 
-# ----------------------------------
-# 스타일
-# ----------------------------------
+# 커스텀 CSS로 트렌디하고 포근한 느낌 주기
 st.markdown("""
-<style>
-.block-container {
-    padding-top: 2rem;
-}
-
-.title-box {
-    background: #faf7f2;
-    border: 1px solid #e8e2d8;
-    border-radius: 15px;
-    padding: 20px;
-    text-align: center;
-    margin-bottom: 20px;
-}
-</style>
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+    html, body, [class*="css"]  {
+        font-family: 'Noto Sans KR', sans-serif;
+        background-color: #FAF6F0; /* 따뜻한 크림색 배경 */
+    }
+    .stButton>button {
+        background-color: #E6A15C; /* 따뜻한 귤색 */
+        color: white;
+        border-radius: 12px;
+        border: none;
+    }
+    .stButton>button:hover {
+        background-color: #CD853F;
+        color: white;
+    }
+    .user-badge {
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: bold;
+        display: inline-block;
+    }
+    .cj-badge { background-color: #D6E4FF; color: #1D39C4; } /* 창준: 포근한 블루 */
+    .dy-badge { background-color: #FFE7BA; color: #D46B08; } /* 다영: 따뜻한 오렌지 */
+    .together-badge { background-color: #F6FFED; color: #389E0D; } /* 함께: 싱그러운 그린 */
+    </style>
 """, unsafe_allow_html=True)
 
-# ----------------------------------
-# DB 연결
-# ----------------------------------
-conn = sqlite3.connect("family_calendar.db", check_same_thread=False)
-cursor = conn.cursor()
+# 2. 가상 데이터베이스 초기화 (스트림릿 세션 상태 사용)
+if 'events' not in st.session_state:
+    st.session_state.events = [
+        {"date": date(2026, 6, 21), "user": "이창준", "content": "🛒 주말 마트 장보기", "emoji": "📦"},
+        {"date": date(2026, 6, 23), "user": "이다영", "content": "💇‍♀️ 미용실 예약 (퇴근 후)", "emoji": "✨"},
+        {"date": date(2026, 6, 25), "user": "함께", "content": "🎬 영화 보면서 맛있는 거 먹기!", "emoji": "🍿"}
+    ]
 
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS schedules(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    schedule_date TEXT,
-    member TEXT,
-    title TEXT
-)
-""")
+# 3. 헤더 영역
+st.write("### 🏡 우리들의 소소한 기록")
+st.title("창준 🤎 다영 스케줄러")
+st.write("오늘도 서로의 하루를 응원해요. ✨")
+st.markdown("---")
 
-conn.commit()
-
-# ----------------------------------
-# 헤더
-# ----------------------------------
-st.markdown("""
-<div class="title-box">
-<h1>🏡 우리의 가족 캘린더</h1>
-<p>일정을 함께 공유해요</p>
-</div>
-""", unsafe_allow_html=True)
-
-# ----------------------------------
-# 일정 추가
-# ----------------------------------
-with st.expander("➕ 일정 추가", expanded=True):
-
-    col1, col2, col3 = st.columns([1,1,2])
-
+# 4. 일정 추가하기 (사이드바 또는 상단 접이식 메뉴)
+with st.expander("🎈 새로운 일정 추가하기", expanded=False):
+    col1, col2 = st.columns(2)
     with col1:
-        schedule_date = st.date_input(
-            "날짜",
-            value=date.today()
-        )
-
+        event_date = st.date_input("언제인가요?", date.today())
+        event_user = st.selectbox("누구의 일정인가요?", ["이창준", "이다영", "함께"])
     with col2:
-        member = st.selectbox(
-            "구성원",
-            ["🤵 창준", "👰 다영"]
-        )
-
-    with col3:
-        title = st.text_input("일정")
-
-    if st.button("저장", use_container_width=True):
-
-        if title.strip():
-
-            cursor.execute(
-                """
-                INSERT INTO schedules
-                (schedule_date, member, title)
-                VALUES (?, ?, ?)
-                """,
-                (
-                    str(schedule_date),
-                    member,
-                    title
-                )
-            )
-
-            conn.commit()
-
-            st.success("일정이 저장되었습니다.")
+        event_emoji = st.selectbox("오늘의 무드 이모지", ["🥰", "📅", "🍰", "🛒", "🍿", "💪", "✈️", "💼"])
+        event_content = st.text_input("무엇을 하나요?", placeholder="예: 맛있는 저녁 먹기")
+    
+    if st.button("우리 집에 일정 등록하기 🏠"):
+        if event_content:
+            st.session_state.events.append({
+                "date": event_date,
+                "user": event_user,
+                "content": event_content,
+                "emoji": event_emoji
+            })
+            # 날짜 정렬
+            st.session_state.events = sorted(st.session_state.events, key=lambda x: x['date'])
+            st.toast("새로운 일정이 포근하게 저장되었어요! 📝")
             st.rerun()
+        else:
+            st.warning("일정 내용을 입력해주세요!")
 
-# ----------------------------------
-# 달력 년/월 선택
-# ----------------------------------
-today = date.today()
+# 5. 일정 타임라인 보여주기
+st.write("#### 🗓️ 다가오는 일정 목록")
 
-c1, c2 = st.columns(2)
+if not st.session_state.events:
+    st.info("아직 등록된 일정이 없어요. 새로운 추억을 채워주세요!")
+else:
+    # 날짜별로 그룹화하여 예쁘게 출력
+    for idx, ev in enumerate(st.session_state.events):
+        # 유저별 배지 지정
+        if ev['user'] == "이창준":
+            badge = f'<span class="user-badge cj-badge">🙋‍♂️ 창준</span>'
+        elif ev['user'] == "이다영":
+            badge = f'<span class="user-badge dy-badge">🙋‍♀️ 다영</span>'
+        else:
+            badge = f'<span class="user-badge together-badge">💕 함께</span>'
+            
+        # 가독성 좋은 날짜 포맷
+        date_str = ev['date'].strftime("%m월 %d일 (%a)")
+        
+        # 일정 한 줄 레이아웃
+        col_date, col_content, col_del = st.columns([2, 5, 1])
+        
+        with col_date:
+            st.write(f"**{date_str}**")
+        with col_content:
+            st.markdown(f"{ev['emoji']} {ev['content']}  {badge}", unsafe_allow_html=True)
+        with col_del:
+            if st.button("🗑️", key=f"del_{idx}"):
+                st.session_state.events.pop(idx)
+                st.rerun()
+        
+        st.markdown("<hr style='margin: 8px 0; border-top: 1px dashed #ddd;'>", unsafe_allow_html=True)
 
-with c1:
-    year = st.selectbox(
-        "연도",
-        range(today.year - 2, today.year + 3),
-        index=2
-    )
-
-with c2:
-    month = st.selectbox(
-        "월",
-        range(1, 13),
-        index=today.month - 1
-    )
-
-# ----------------------------------
-# 일정 조회
-# ----------------------------------
-cursor.execute("SELECT * FROM schedules")
-rows = cursor.fetchall()
-
-events = {}
-
-for row in rows:
-
-    event_id = row[0]
-    event_date = row[1]
-    member = row[2]
-    title = row[3]
-
-    if event_date not in events:
-        events[event_date] = []
-
-    events[event_date].append(
-        (event_id, member, title)
-    )
-
-# ----------------------------------
-# 달력
-# ----------------------------------
-st.subheader("📅 월간 일정")
-
-weekdays = ["월", "화", "수", "목", "금", "토", "일"]
-
-header = st.columns(7)
-
-for i, day_name in enumerate(weekdays):
-    header[i].markdown(f"**{day_name}**")
-
-cal = calendar.Calendar(firstweekday=0)
-weeks = cal.monthdayscalendar(year, month)
-
-for week in weeks:
-
-    cols = st.columns(7)
-
-    for i, day in enumerate(week):
-
-        with cols[i]:
-
-            if day == 0:
-                st.empty()
-                continue
-
-            current_date = date(year, month, day)
-            key = str(current_date)
-
-            with st.container(border=True):
-
-                st.markdown(f"**{day}**")
-
-                if key in events:
-
-                    for _, member, title in events[key]:
-
-                        if member == "🤵 신랑":
-                            st.info(f"🤵 {title}")
-
-                        else:
-                            st.success(f"👰 {title}")
-
-# ----------------------------------
-# 등록된 일정 목록
-# ----------------------------------
-st.divider()
-
-st.subheader("📝 등록된 일정")
-
-cursor.execute("""
-SELECT *
-FROM schedules
-ORDER BY schedule_date
-""")
-
-rows = cursor.fetchall()
-
-if not rows:
-    st.info("등록된 일정이 없습니다.")
-
-for row in rows:
-
-    event_id = row[0]
-    schedule_date = row[1]
-    member = row[2]
-    title = row[3]
-
-    col1, col2 = st.columns([6,1])
-
-    with col1:
-        st.write(
-            f"{schedule_date} | {member} | {title}"
-        )
-
-    with col2:
-
-        if st.button(
-            "삭제",
-            key=f"delete_{event_id}"
-        ):
-
-            cursor.execute(
-                "DELETE FROM schedules WHERE id=?",
-                (event_id,)
-            )
-
-            conn.commit()
-
-            st.rerun()
-
+# 6. 감성 하단 레이아웃
+st.markdown("---")
+st.caption("Designed with 🤎 for Changjun & Dayoung")
